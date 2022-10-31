@@ -1,0 +1,5 @@
+- 2D Platformer, Castlevania/Ninja Gaiden style. 
+- Hero can move left and right, jump, duck, attack and use a sub-weapon. 
+- Hero is trying to reach the end of the level and defeat the boss there.
+- If the Hero runs out of health during the level, lose a life and start at a checkpoint.
+- 
