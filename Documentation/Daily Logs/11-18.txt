@@ -1,0 +1,8 @@
+Things to finish by today:
+- Player Script + Animator
+- Skull Script + Animator
+- ^ with another enemy
+- Test damage function and make sure I-frames work
+
+
+Things finished:
