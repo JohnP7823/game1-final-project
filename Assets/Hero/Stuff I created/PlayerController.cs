@@ -10,7 +10,9 @@ public class PlayerController : MonoBehaviour
     public float Speed = 5;
     public Vector2 LastInput;
     public float acceleration = 1.1F;
-    public bool grounded = true;
+    public bool grounded = true, guarding = false, damagable = true, isDead = false;
+    public int hp = 20, mhp = 20;
+    public int mana = 3;
 
     // Start is called before the first frame update
     void Start()
@@ -43,44 +45,56 @@ public class PlayerController : MonoBehaviour
         else if (myRig.velocity == Vector2.zero) // Play the idle anim if the player is not moving
         {
             myAnim.SetInteger("DIR", 1);
+            grounded = true;
+            myAnim.SetBool("Grounded", grounded);
         }
     }
-
-    public void Move(InputAction.CallbackContext c) // Moves on WASD press or held
+    // Moves on WASD press or held
+    public void Move(InputAction.CallbackContext c) 
     {
-        if (c.phase == InputActionPhase.Started || c.phase == InputActionPhase.Performed)
+        if (!isDead)
         {
-            Vector2 temp = c.ReadValue<Vector2>();
-            LastInput = new Vector2(temp.x, 0);
-            myRig.velocity = new Vector3(temp.x, 0).normalized * Speed + new Vector3(0, myRig.velocity.y);
-            if (grounded == true && temp.x > 0)
+            if (c.phase == InputActionPhase.Started || c.phase == InputActionPhase.Performed)
             {
-                myAnim.SetInteger("DIR", 2);
-                GetComponent<SpriteRenderer>().flipX = false;
+                Vector2 temp = c.ReadValue<Vector2>();
+                LastInput = new Vector2(temp.x, 0);
+                myRig.velocity = new Vector3(temp.x, 0).normalized * Speed + new Vector3(0, myRig.velocity.y);
+                if (grounded)
+                {
+                    myAnim.SetInteger("DIR", 2);
+                    if (temp.x > 0)
+                    {
+                        GetComponent<SpriteRenderer>().flipX = false;
+                    }
+                    else
+                    {
+                        GetComponent<SpriteRenderer>().flipX = true;
+                    }
+
+                }
+                else
+                {
+                    if (temp.x > 0)
+                    {
+                        GetComponent<SpriteRenderer>().flipX = false;
+                    }
+                    else
+                    {
+                        GetComponent<SpriteRenderer>().flipX = true;
+                    }
+                }
             }
-            else if (grounded == true && temp.x < 0)
+            if (c.phase == InputActionPhase.Canceled) // No more velocity when the key is removed.
             {
-                myAnim.SetInteger("DIR", 2);
-                GetComponent<SpriteRenderer>().flipX = true;
-            }
-            else if (temp.x > 0)
-            {
-                GetComponent<SpriteRenderer>().flipX = false;
-            }
-            else if (temp.x < 0)
-            {
-                GetComponent<SpriteRenderer>().flipX = true;
+                LastInput = Vector2.zero;
             }
         }
-        if (c.phase == InputActionPhase.Canceled) // No more velocity when the key is removed.
-        {
-            LastInput = Vector2.zero;
-        }
+        
     }
     // Jumps when the player hits spacebar, registers that the player is airborne and unable to jump again
     public void Jump(InputAction.CallbackContext c)
     {
-        if (c.action.phase == InputActionPhase.Started && grounded)
+        if (c.action.phase == InputActionPhase.Started && grounded && !guarding && !isDead)
         {
             grounded = false;
             myAnim.SetTrigger("Jump");
@@ -91,44 +105,67 @@ public class PlayerController : MonoBehaviour
     // Swings the sword when MB1 is pressed
     public void Attack(InputAction.CallbackContext c)
     {
-        if (c.action.phase == InputActionPhase.Started)
+        if (c.action.phase == InputActionPhase.Started && !guarding && !isDead)
         {
             myAnim.SetTrigger("Attack");
             // Setup actual way to attack and deal dmg
         }
     }
-
+    // Guards against damage when Shift is pressed && held, perfect blocks for the first 0.5 secs
     public void Block(InputAction.CallbackContext c)
     {
-        if(c.action.phase == InputActionPhase.Started)
+        if (!isDead)
         {
-            myAnim.SetTrigger("Block");
-            myAnim.SetBool("IdleBlock", true);
-            // Setup how to perfect block and everything
-        }
+            if (c.action.phase == InputActionPhase.Started)
+            {
+                Speed = 0;              // Make it where the player can't move;
+                guarding = true;
+                myAnim.SetTrigger("Block");
+                myAnim.SetBool("IdleBlock", guarding);
+                // Setup how to perfect block and everything
+            }
 
-        if(c.action.phase == InputActionPhase.Canceled)
-        {
-            myAnim.SetBool("IdleBlock", false);
+            if (c.action.phase == InputActionPhase.Canceled)
+            {
+                Speed = 5;              // Return the player's movement
+                guarding = false;
+                myAnim.SetBool("IdleBlock", guarding);
+            }
         }
+        
     }
-
+    // Makes the player take damage according to the damage variable. Kills the player if they run out of health.
     public void TakeDamage(int damage)
     {
         // make hero take damage, check if dead, if dead, go to death func,  else, play hurt anim
+        hp = hp - damage;
+        if(hp <= 0)
+        {
+            Death();
+        }
+        else
+        {
+            myAnim.SetTrigger("Hurt");
+        }
+    }
+    // Kills the player
+    public void Death()
+    {
+        myAnim.SetTrigger("Death");
+        // death code
     }
 
     // Checks to see what it collided with
-    private void OnCollisionEnter(Collision other)
+    private void OnCollisionEnter2D(Collision2D other)
     {
         if (other.gameObject.tag == "Platform" || other.gameObject.tag == "Floor")
         {
             grounded = true;
             myAnim.SetBool("Grounded", grounded);
         }
-        if(other.gameObject.tag == "Enemy")
+        else if(other.gameObject.tag == "Enemy")
         {
-            TakeDamage(1); // Take damage according to the enemies dmg value
+            TakeDamage(5); // Take damage according to the enemies dmg value
         }
     }
 }
