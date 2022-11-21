@@ -7,10 +7,11 @@ public class PlayerController : MonoBehaviour
 {
     public Animator myAnim; // DIR 1 is the idle, DIR 2 is the running anim
     public Rigidbody2D myRig;
-    public float Speed = 5;
+    public GameObject attackArea = default;
+    public float Speed = 5, acceleration = 1.1F;
     public Vector2 LastInput;
-    public float acceleration = 1.1F;
-    public bool grounded = true, guarding = false, damagable = true, isDead = false;
+    private float timeToAttack = .25f;
+    private bool grounded = true, guarding = false, damagable = true, isDead = false, attacking = false;
     public int hp = 20, mhp = 20;
     public int mana = 3;
 
@@ -27,6 +28,7 @@ public class PlayerController : MonoBehaviour
         {
             throw new System.Exception(name + " does not have a rigidbody!");
         }
+        attackArea = transform.GetChild(0).gameObject;
     }
 
     // Update is called once per frame
@@ -139,6 +141,7 @@ public class PlayerController : MonoBehaviour
     {
         // make hero take damage, check if dead, if dead, go to death func,  else, play hurt anim
         hp = hp - damage;
+        damagable = false;
         if(hp <= 0)
         {
             Death();
@@ -146,12 +149,14 @@ public class PlayerController : MonoBehaviour
         else
         {
             myAnim.SetTrigger("Hurt");
+            //damagable = true;
         }
     }
     // Kills the player
     public void Death()
     {
         myAnim.SetTrigger("Death");
+        isDead = true;
         // death code
     }
 
