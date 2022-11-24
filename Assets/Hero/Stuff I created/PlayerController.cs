@@ -8,13 +8,13 @@ public class PlayerController : MonoBehaviour
     public Animator myAnim; // DIR 1 is the idle, DIR 2 is the running anim
     public Rigidbody2D myRig;
     public GameObject attackArea = default;
-    public float Speed = 5, acceleration = 1.1F;
+    public float Speed = 5, acceleration = 0.1F;
     public Vector2 LastInput;
     private float timeToAttack = .25f;
-    private bool grounded = true, guarding = false, damagable = true, isDead = false, attacking = false;
+    private bool grounded = true, guarding = false, damagable = true, isDead = false, attacking = false, moveable = true;
     public int hp = 20, mhp = 20;
     public int mana = 3;
-
+    private int tempF = 0;
     // Start is called before the first frame update
     void Start()
     {
@@ -50,17 +50,21 @@ public class PlayerController : MonoBehaviour
             grounded = true;
             myAnim.SetBool("Grounded", grounded);
         }
+        if (attacking)
+        {
+            tempF++;
+        }
     }
     // Moves on WASD press or held
     public void Move(InputAction.CallbackContext c) 
     {
-        if (!isDead)
+        if (!isDead && moveable)
         {
             if (c.phase == InputActionPhase.Started || c.phase == InputActionPhase.Performed)
             {
                 Vector2 temp = c.ReadValue<Vector2>();
                 LastInput = new Vector2(temp.x, 0);
-                myRig.velocity = new Vector3(temp.x, 0).normalized * Speed + new Vector3(0, myRig.velocity.y);
+                myRig.velocity = new Vector2(temp.x, 0).normalized * Speed + new Vector2(0, myRig.velocity.y);
                 if (grounded)
                 {
                     myAnim.SetInteger("DIR", 2);
@@ -104,23 +108,36 @@ public class PlayerController : MonoBehaviour
             myRig.velocity = new Vector2(myRig.velocity.x, 7.5f);
         }
     }
+
     // Swings the sword when MB1 is pressed
     public void Attack(InputAction.CallbackContext c)
     {
-        if (c.action.phase == InputActionPhase.Started && !guarding && !isDead)
+        if (c.action.phase == InputActionPhase.Started && !guarding && !isDead && !attacking)
         {
             myAnim.SetTrigger("Attack");
-            // Setup actual way to attack and deal dmg
+            attacking = true;
+            attackArea.SetActive(attacking);
+            StartCoroutine(AttackingPhase());
         }
     }
+
+    IEnumerator AttackingPhase()
+    {
+        yield return new WaitForSeconds(.25f);
+        Debug.Log("Player can attack again");
+        attacking = false;
+        attackArea.SetActive(attacking);
+    }
+
     // Guards against damage when Shift is pressed && held, perfect blocks for the first 0.5 secs
     public void Block(InputAction.CallbackContext c)
     {
+        Debug.Log(tempF);
         if (!isDead)
         {
             if (c.action.phase == InputActionPhase.Started)
             {
-                Speed = 0;              // Make it where the player can't move;
+                moveable = false;              // Make it where the player can't move;
                 guarding = true;
                 myAnim.SetTrigger("Block");
                 myAnim.SetBool("IdleBlock", guarding);
@@ -129,29 +146,52 @@ public class PlayerController : MonoBehaviour
 
             if (c.action.phase == InputActionPhase.Canceled)
             {
-                Speed = 5;              // Return the player's movement
+                moveable = true;             // Return the player's movement
                 guarding = false;
                 myAnim.SetBool("IdleBlock", guarding);
             }
         }
         
     }
+
     // Makes the player take damage according to the damage variable. Kills the player if they run out of health.
     public void TakeDamage(int damage)
     {
-        // make hero take damage, check if dead, if dead, go to death func,  else, play hurt anim
-        hp = hp - damage;
+        // make hero take damage, is they are guarding, take half damage
+        if (guarding)
+        {
+            hp = hp - (damage/2);
+            Debug.Log("Player took 1 damage");
+        }
+        else
+        {
+            hp = hp - damage;
+            Debug.Log("Player took 2 damage");
+        }
         damagable = false;
-        if(hp <= 0)
+        // check if dead: if dead, go to death func,  else, play hurt anim and become temporarily immune to damage
+        if (hp <= 0)
         {
             Death();
         }
         else
         {
-            myAnim.SetTrigger("Hurt");
-            //damagable = true;
+            if (!guarding)
+            {
+                myAnim.SetTrigger("Hurt");
+            } 
+            StartCoroutine(InvulnerablePhase());
         }
     }
+
+    // Makes the player immune to damage for half a second
+    IEnumerator InvulnerablePhase()
+    {    
+        yield return new WaitForSeconds(1.5f);
+        Debug.Log("Player can be hit again");
+        damagable = true;
+    }
+
     // Kills the player
     public void Death()
     {
@@ -168,9 +208,21 @@ public class PlayerController : MonoBehaviour
             grounded = true;
             myAnim.SetBool("Grounded", grounded);
         }
-        else if(other.gameObject.tag == "Enemy")
+        else if(other.gameObject.tag == "Enemy" && damagable)
         {
-            TakeDamage(5); // Take damage according to the enemies dmg value
+            TakeDamage(2); // Take damage according to the enemies dmg value
+        }
+        else if(other.gameObject.tag == "Potion")
+        {
+            // Potion functionality
+        }
+    }
+
+    private void OnCollisionStay2D(Collision2D other)
+    {
+        if (other.gameObject.tag == "Enemy" && damagable)
+        {
+            TakeDamage(2); // Take damage according to the enemies dmg value
         }
     }
 }

@@ -1,0 +1,2 @@
+Player:
+ - Running animation does not play if you move, guard, then let go of guard without letting go of move in the same direction. (plays Idle instead)
