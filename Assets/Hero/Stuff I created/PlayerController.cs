@@ -7,14 +7,13 @@ public class PlayerController : MonoBehaviour
 {
     public Animator myAnim; // DIR 1 is the idle, DIR 2 is the running anim
     public Rigidbody2D myRig;
-    public GameObject attackArea = default;
+    public GameObject attackArea, fireballProjectile;
     public float Speed = 5, acceleration = 0.1F;
     public Vector2 LastInput;
     private float timeToAttack = .25f;
-    private bool grounded = true, guarding = false, damagable = true, isDead = false, attacking = false, moveable = true;
+    private bool grounded = true, guarding = false, damagable = true, isDead = false, attacking = false, sAttacking = false, moveable = true;
     public int hp = 20, mhp = 20;
     public int mana = 3;
-    private int tempF = 0;
     // Start is called before the first frame update
     void Start()
     {
@@ -50,53 +49,50 @@ public class PlayerController : MonoBehaviour
             grounded = true;
             myAnim.SetBool("Grounded", grounded);
         }
-        if (attacking)
-        {
-            tempF++;
-        }
     }
     // Moves on WASD press or held
     public void Move(InputAction.CallbackContext c) 
     {
-        if (!isDead && moveable)
+        if (isDead || !moveable)
         {
-            if (c.phase == InputActionPhase.Started || c.phase == InputActionPhase.Performed)
+            return;
+        }
+        if (c.phase == InputActionPhase.Started || c.phase == InputActionPhase.Performed)
+        {
+            Vector2 temp = c.ReadValue<Vector2>();
+            LastInput = new Vector2(temp.x, 0);
+            myRig.velocity = new Vector2(temp.x, 0).normalized * Speed + new Vector2(0, myRig.velocity.y);
+            if (grounded)
             {
-                Vector2 temp = c.ReadValue<Vector2>();
-                LastInput = new Vector2(temp.x, 0);
-                myRig.velocity = new Vector2(temp.x, 0).normalized * Speed + new Vector2(0, myRig.velocity.y);
-                if (grounded)
+                myAnim.SetInteger("DIR", 2);
+                if (temp.x > 0)
                 {
-                    myAnim.SetInteger("DIR", 2);
-                    if (temp.x > 0)
-                    {
-                        GetComponent<SpriteRenderer>().flipX = false;
-                    }
-                    else
-                    {
-                        GetComponent<SpriteRenderer>().flipX = true;
-                    }
-
+                    GetComponent<SpriteRenderer>().flipX = false;
                 }
                 else
                 {
-                    if (temp.x > 0)
-                    {
-                        GetComponent<SpriteRenderer>().flipX = false;
-                    }
-                    else
-                    {
-                        GetComponent<SpriteRenderer>().flipX = true;
-                    }
+                    GetComponent<SpriteRenderer>().flipX = true;
                 }
-            }
-            if (c.phase == InputActionPhase.Canceled) // No more velocity when the key is removed.
-            {
-                LastInput = Vector2.zero;
-            }
+
+             }
+             else
+             {
+                 if (temp.x > 0)
+                 {
+                     GetComponent<SpriteRenderer>().flipX = false;
+                 }
+                 else
+                 {
+                     GetComponent<SpriteRenderer>().flipX = true;
+                 }
+             }
         }
-        
+        if (c.phase == InputActionPhase.Canceled) // No more velocity when the key is removed.
+        {
+            LastInput = Vector2.zero;
+        }
     }
+
     // Jumps when the player hits spacebar, registers that the player is airborne and unable to jump again
     public void Jump(InputAction.CallbackContext c)
     {
@@ -123,16 +119,21 @@ public class PlayerController : MonoBehaviour
 
     IEnumerator AttackingPhase()
     {
-        yield return new WaitForSeconds(.25f);
+        yield return new WaitForSeconds(timeToAttack);
         Debug.Log("Player can attack again");
         attacking = false;
         attackArea.SetActive(attacking);
     }
-
+    public void SubAttack(InputAction.CallbackContext c)
+    {
+        if (c.action.phase == InputActionPhase.Started && !guarding && !isDead && !sAttacking)
+        {
+            // Create the fireball
+        }
+    }
     // Guards against damage when Shift is pressed && held, perfect blocks for the first 0.5 secs
     public void Block(InputAction.CallbackContext c)
     {
-        Debug.Log(tempF);
         if (!isDead)
         {
             if (c.action.phase == InputActionPhase.Started)
@@ -161,12 +162,12 @@ public class PlayerController : MonoBehaviour
         if (guarding)
         {
             hp = hp - (damage/2);
-            Debug.Log("Player took 1 damage");
+            Debug.Log("Player took: " + damage/2);
         }
         else
         {
             hp = hp - damage;
-            Debug.Log("Player took 2 damage");
+            Debug.Log("Player took: " + damage);
         }
         damagable = false;
         // check if dead: if dead, go to death func,  else, play hurt anim and become temporarily immune to damage
@@ -176,6 +177,7 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
+            GetComponent<SpriteRenderer>().color = new Color(1f, 1f, 1f, .5f);
             if (!guarding)
             {
                 myAnim.SetTrigger("Hurt");
@@ -190,6 +192,7 @@ public class PlayerController : MonoBehaviour
         yield return new WaitForSeconds(1.5f);
         Debug.Log("Player can be hit again");
         damagable = true;
+        GetComponent<SpriteRenderer>().color = new Color(1f, 1f, 1f, 1f);
     }
 
     // Kills the player
@@ -208,21 +211,39 @@ public class PlayerController : MonoBehaviour
             grounded = true;
             myAnim.SetBool("Grounded", grounded);
         }
-        else if(other.gameObject.tag == "Enemy" && damagable)
+        else if((other.gameObject.tag == "Enemy" || other.gameObject.tag == "enemyProjectile") && damagable)
         {
-            TakeDamage(2); // Take damage according to the enemies dmg value
+            TakeDamage(other.gameObject.GetComponent<EnemyBase>().GetDamage()); // Take damage according to the enemies dmg value
         }
         else if(other.gameObject.tag == "Potion")
         {
-            // Potion functionality
+            int pType = other.gameObject.GetComponent<PotionBehavior>().getPotionType(), pValue = other.gameObject.GetComponent<PotionBehavior>().getPotionValue();
+
+            if(pType == 1)
+            {
+                hp = hp + pValue;
+                if (hp > mhp)
+                {
+                    hp = mhp;
+                }
+            }
+            else if(pType == 2)
+            {
+                mana = mana + pValue;
+            }
         }
     }
 
     private void OnCollisionStay2D(Collision2D other)
     {
-        if (other.gameObject.tag == "Enemy" && damagable)
+        if ((other.gameObject.tag == "Enemy" || other.gameObject.tag == "enemyProjectile") && damagable)
         {
-            TakeDamage(2); // Take damage according to the enemies dmg value
+            TakeDamage(other.gameObject.GetComponent<EnemyBase>().GetDamage()); // Take damage according to the enemies dmg value
         }
+    }
+
+    private void Awake()
+    {
+        attackArea.SetActive(false);
     }
 }
