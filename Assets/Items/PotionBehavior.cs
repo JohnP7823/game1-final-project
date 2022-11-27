@@ -47,6 +47,6 @@ public class PotionBehavior : MonoBehaviour
 
     private void Awake()
     {
-        myRig.velocity = new Vector2(0, -1) * 1.5f;
+        myRig.velocity = new Vector2(0, -1.5f);
     }
 }

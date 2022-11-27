@@ -61,6 +61,7 @@ public class PlayerController : MonoBehaviour
             attackArea.GetComponent<BoxCollider2D>().offset = new Vector2(0.9726f, 0.783f);
         }
     }
+    
     // Moves on WASD press or held
     public void Move(InputAction.CallbackContext c) 
     {
@@ -274,12 +275,12 @@ public class PlayerController : MonoBehaviour
                 {
                     hp = mhp;
                 }
-                Debug.Log("Player gained " + pValue + " health. Health is at: " + hp);
+                //Debug.Log("Player gained " + pValue + " health. Health is at: " + hp);
             }
             else if(pType == 2)
             {
                 mana = mana + pValue;
-                Debug.Log("Player gained " + pValue + " mana. Mana is at: " + mana);
+                //Debug.Log("Player gained " + pValue + " mana. Mana is at: " + mana);
             }
         }
     }

@@ -44,18 +44,20 @@ public class EnemyBase : MonoBehaviour
         myRig.velocity = Vector2.zero;
         if (health <= 0)
         {
-            int itemRoll = Random.Range(1, 100);
+            int itemRoll = Random.Range(1, 100);   // Coroutine this to allow a death animation
+            //int itemRoll = 100; // Temp
+            Debug.Log(itemRoll);
             if(itemRoll >= 91)
             {
-                Instantiate(largeMana, new Vector2(myRig.position.x, myRig.position.y + 1), Quaternion.identity);
+                Instantiate(largeMana, new Vector2(myRig.position.x, myRig.position.y), Quaternion.identity);
             }
             else if (itemRoll >= 71)
             {
-                Instantiate(smallMana, new Vector2(myRig.position.x, myRig.position.y + 1), Quaternion.identity);
+                Instantiate(smallMana, new Vector2(myRig.position.x, myRig.position.y), Quaternion.identity);
             }
             else if (itemRoll <= 2)
             {
-                Instantiate(smallHealth, new Vector2(myRig.position.x, myRig.position.y + 1), Quaternion.identity);
+                Instantiate(smallHealth, new Vector2(myRig.position.x, myRig.position.y), Quaternion.identity);
             }
             //add score
             Destroy(gameObject);
@@ -77,7 +79,11 @@ public class EnemyBase : MonoBehaviour
 
     protected void OnCollisionEnter2D(Collision2D other)
     {
-        if(other.gameObject.tag == "Player" && thePlayer.GetComponent<PlayerController>().damagable == false)
+        if (other.gameObject.tag == "Player" && thePlayer.GetComponent<PlayerController>().damagable == false)
+        {
+            Physics2D.IgnoreCollision(other.collider, GetComponent<Collider2D>());
+        }
+        else if (other.gameObject.tag == "Potion")
         {
             Physics2D.IgnoreCollision(other.collider, GetComponent<Collider2D>());
         }
@@ -86,6 +92,10 @@ public class EnemyBase : MonoBehaviour
     protected void OnCollisionStay2D(Collision2D other)
     {
         if (other.gameObject.tag == "Player" && thePlayer.GetComponent<PlayerController>().damagable == false)
+        {
+            Physics2D.IgnoreCollision(other.collider, GetComponent<Collider2D>());
+        }
+        else if (other.gameObject.tag == "Potion")
         {
             Physics2D.IgnoreCollision(other.collider, GetComponent<Collider2D>());
         }
