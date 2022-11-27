@@ -9,6 +9,7 @@ TagManager:
   - Enemy
   - Floor
   - Platform
+  - Potion
   layers:
   - Default
   - TransparentFX
