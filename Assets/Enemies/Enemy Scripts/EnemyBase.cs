@@ -7,8 +7,9 @@ public class EnemyBase : MonoBehaviour
     public Rigidbody2D myRig;
     public Animator myAnim;
     public GameObject thePlayer, smallHealth, largeMana, smallMana;
-    public int health = 4, damage = 2;
-    protected bool stunned = false, attacking = false;
+    public int health = 4, damage = 2, scoreVal = 100;
+    protected bool stunned = false, attacking = false, flipped = false, goingThrough = false;
+    protected Vector2 oldVel;
 
     // Start is called before the first frame update
     void Start()
@@ -41,6 +42,7 @@ public class EnemyBase : MonoBehaviour
         Debug.Log(name + " has been hit");
         stunned = true;
         health = health - damage;
+        oldVel = myRig.velocity;
         myRig.velocity = Vector2.zero;
         if (health <= 0)
         {
@@ -59,7 +61,7 @@ public class EnemyBase : MonoBehaviour
             {
                 Instantiate(smallHealth, new Vector2(myRig.position.x, myRig.position.y), Quaternion.identity);
             }
-            //add score
+            GameState.AddScore(scoreVal);
             Destroy(gameObject);
         }
         else
@@ -72,32 +74,39 @@ public class EnemyBase : MonoBehaviour
     // Makes the enemy stop moving on being hit
     IEnumerator StopPhase()
     {
-        yield return new WaitForSeconds(.25f);
+        yield return new WaitForSeconds(.4f);
         Debug.Log("Enemy is moving again");
         stunned = false;
+        myRig.velocity = oldVel;
     }
 
-    protected void OnCollisionEnter2D(Collision2D other)
+    protected virtual void OnCollisionEnter2D(Collision2D other)
     {
-        if (other.gameObject.tag == "Player" && thePlayer.GetComponent<PlayerController>().damagable == false)
+        if (!goingThrough && other.gameObject.tag == "Player" && thePlayer.GetComponent<PlayerController>().damagable == false)
+        {
+            StartCoroutine(EnableCol());
+        }
+        else if (other.gameObject.tag == "Potion" || other.gameObject.tag == "Enemy")
         {
             Physics2D.IgnoreCollision(other.collider, GetComponent<Collider2D>());
         }
-        else if (other.gameObject.tag == "Potion")
-        {
-            Physics2D.IgnoreCollision(other.collider, GetComponent<Collider2D>());
-        }
+    }
+
+    IEnumerator EnableCol()
+    {
+        goingThrough = true;
+        Physics2D.IgnoreCollision(thePlayer.GetComponent<BoxCollider2D>(), GetComponent<Collider2D>());
+        Debug.Log("Waiting until player is dmgable");
+        yield return new WaitUntil(() => thePlayer.GetComponent<PlayerController>().damagable == true);
+        Physics2D.IgnoreCollision(thePlayer.GetComponent<BoxCollider2D>(), GetComponent<Collider2D>(), false);
+        goingThrough = false;
     }
 
     protected void OnCollisionStay2D(Collision2D other)
     {
-        if (other.gameObject.tag == "Player" && thePlayer.GetComponent<PlayerController>().damagable == false)
+        if (!goingThrough && other.gameObject.tag == "Player" && thePlayer.GetComponent<PlayerController>().damagable == false)
         {
-            Physics2D.IgnoreCollision(other.collider, GetComponent<Collider2D>());
-        }
-        else if (other.gameObject.tag == "Potion")
-        {
-            Physics2D.IgnoreCollision(other.collider, GetComponent<Collider2D>());
+            StartCoroutine(EnableCol());
         }
     }
 

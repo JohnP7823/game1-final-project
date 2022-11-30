@@ -3,20 +3,20 @@ Fireball - DONE
 Potions - DONE
 Enemies:
    Base - DONE
-   Walker(Slime) - W
-   Jumper(Rat) - N
-   Diver(Bat) - N
+   Walker(Slime) - D
+   Jumper(Rat) - D
+   Diver(Bat) - D
    Obstacles(Spikes) - N
-   Flying Tracker(Pebble) - N
-   Pit Jumper(Crab) - N
-   Shooter(Skull) - N
+   Flying Tracker(Pebble) - D
+   Pit Jumper(Crab) - D
+   Shooter(Skull) - D
 (O)Turret? - N 
 Bosses:
    Boss 1 - N
    Boss 2(Golem) - N
-   Boss 3 - N
-Checkpoints - N
-Level Transition - N
+   Boss 3(Not Drac) - N
+Checkpoints - W
+Level Transition - W
 Camera Movement - N
-Restart Level - N
+Restart Level - W
 UI - N

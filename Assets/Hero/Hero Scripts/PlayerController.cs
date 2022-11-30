@@ -111,7 +111,10 @@ public class PlayerController : MonoBehaviour
         if (c.action.phase == InputActionPhase.Started && grounded && !guarding && !isDead)
         {
             grounded = false;
-            myAnim.SetTrigger("Jump");
+            if (!attacking)
+            {
+                myAnim.SetTrigger("Jump");
+            }
             myAnim.SetBool("Grounded", grounded);
             myRig.velocity = new Vector2(myRig.velocity.x, 7.5f);
         }
@@ -145,6 +148,7 @@ public class PlayerController : MonoBehaviour
         {
             sAttacking = true;
             mana--;
+            GameState.UpdateMana(mana);
             if (GetComponent<SpriteRenderer>().flipX == false)
             {
                 Instantiate(fireballProjectile, new Vector2(myRig.position.x + 0.2f, myRig.position.y+1), Quaternion.identity);
@@ -219,8 +223,8 @@ public class PlayerController : MonoBehaviour
             Debug.Log("Player took: " + damage);
         }
         damagable = false;
-        // check if dead: if dead, go to death func,  else, play hurt anim and become temporarily immune to damage
-        if (hp <= 0)
+        HealthBar.Instance.UpdateHealthBar(hp);
+        if (hp <= 0) // check if dead: if dead, go to death func,  else, play hurt anim and become temporarily immune to damage
         {
             Death();
         }
@@ -239,7 +243,7 @@ public class PlayerController : MonoBehaviour
     IEnumerator InvulnerablePhase()
     {    
         yield return new WaitForSeconds(1.5f);
-        Debug.Log("Player can be hit again");
+        //Debug.Log("Player can be hit again");
         damagable = true;
         GetComponent<SpriteRenderer>().color = new Color(1f, 1f, 1f, 1f);
     }
@@ -249,8 +253,27 @@ public class PlayerController : MonoBehaviour
     {
         myAnim.SetTrigger("Death");
         isDead = true;
-        // death code
+        if (GameState.Lives > 0)
+        {
+            GameState.RestartAtCheckpoint();
+        }
     }
+
+    public void ResetState()
+    {
+        hp = 20;
+        mana = 3;
+        grounded = true;
+        HealthBar.Instance.UpdateHealthBar(hp);
+    }
+
+    public void SetStats(int nHP, int nMana)
+    {
+        hp = nHP;
+        mana = nMana;
+        HealthBar.Instance.UpdateHealthBar(hp);
+    }
+   
 
     // Checks to see what it collided with
     private void OnCollisionEnter2D(Collision2D other)
@@ -260,7 +283,7 @@ public class PlayerController : MonoBehaviour
             grounded = true;
             myAnim.SetBool("Grounded", grounded);
         }
-        else if((other.gameObject.tag == "Enemy" || other.gameObject.tag == "enemyProjectile") && damagable)
+        else if((other.gameObject.tag == "Enemy" || other.gameObject.tag == "EProjectile") && damagable)
         {
             TakeDamage(other.gameObject.GetComponent<EnemyBase>().GetDamage()); // Take damage according to the enemies dmg value
         }
@@ -275,12 +298,12 @@ public class PlayerController : MonoBehaviour
                 {
                     hp = mhp;
                 }
-                //Debug.Log("Player gained " + pValue + " health. Health is at: " + hp);
+                HealthBar.Instance.UpdateHealthBar(hp);
             }
             else if(pType == 2)
             {
                 mana = mana + pValue;
-                //Debug.Log("Player gained " + pValue + " mana. Mana is at: " + mana);
+                GameState.UpdateMana(mana);
             }
         }
     }
@@ -288,6 +311,10 @@ public class PlayerController : MonoBehaviour
     //See above
     private void OnCollisionStay2D(Collision2D other)
     {
+        if(other.gameObject.name != "Floor Collider")
+        {
+            //Debug.Log(name + " is still colliding with: " + other.gameObject.name);
+        }
         if ((other.gameObject.tag == "Enemy" || other.gameObject.tag == "enemyProjectile") && damagable)
         {
             TakeDamage(other.gameObject.GetComponent<EnemyBase>().GetDamage()); // Take damage according to the enemies dmg value

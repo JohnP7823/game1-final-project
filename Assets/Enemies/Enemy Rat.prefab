@@ -179,3 +179,4 @@ MonoBehaviour:
     type: 3}
   health: 2
   damage: 2
+  scoreVal: 300
