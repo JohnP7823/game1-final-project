@@ -55,10 +55,12 @@ public static class GameState
         // Do the scene transfer with the cut to black and back.
         thePlayer = GameObject.Find("Player");
         thePlayer.GetComponent<PlayerController>().SetStats(PlayerHealth,  PlayerMana);
+        UpdateMana(PlayerMana);
     }
 
     public static void NextLevel()
     {
+        Debug.Log(Level);
         switch (Level)
         {
             case 1:
@@ -71,8 +73,8 @@ public static class GameState
                 SceneManager.LoadScene("Level 3-1");
                 break;
         }
-        thePlayer = GameObject.Find("Player");
-        thePlayer.GetComponent<PlayerController>().ResetState();
+        //thePlayer = GameObject.Find("Player");
+        //thePlayer.GetComponent<PlayerController>().ResetState();
     }
 
     public static void AddScore(int aScore)
