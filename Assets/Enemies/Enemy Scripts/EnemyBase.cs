@@ -39,16 +39,13 @@ public class EnemyBase : MonoBehaviour
     //Makes the enemy take damage to their health equal to the damage variable
     public virtual void TakeDamage(int damage)
     {
-        Debug.Log(name + " has been hit");
         stunned = true;
         health = health - damage;
         oldVel = myRig.velocity;
         myRig.velocity = Vector2.zero;
         if (health <= 0)
         {
-            int itemRoll = Random.Range(1, 100);   // Coroutine this to allow a death animation
-            //int itemRoll = 100; // Temp
-            Debug.Log(itemRoll);
+            int itemRoll = Random.Range(1, 101);   // Coroutine this to allow a death animation
             if(itemRoll >= 91)
             {
                 Instantiate(largeMana, new Vector2(myRig.position.x, myRig.position.y), Quaternion.identity);
@@ -75,7 +72,6 @@ public class EnemyBase : MonoBehaviour
     IEnumerator StopPhase()
     {
         yield return new WaitForSeconds(.4f);
-        Debug.Log("Enemy is moving again");
         stunned = false;
         myRig.velocity = oldVel;
     }
@@ -92,17 +88,16 @@ public class EnemyBase : MonoBehaviour
         }
     }
 
-    IEnumerator EnableCol()
+    protected IEnumerator EnableCol()
     {
         goingThrough = true;
         Physics2D.IgnoreCollision(thePlayer.GetComponent<BoxCollider2D>(), GetComponent<Collider2D>());
-        Debug.Log("Waiting until player is dmgable");
         yield return new WaitUntil(() => thePlayer.GetComponent<PlayerController>().damagable == true);
         Physics2D.IgnoreCollision(thePlayer.GetComponent<BoxCollider2D>(), GetComponent<Collider2D>(), false);
         goingThrough = false;
     }
 
-    protected void OnCollisionStay2D(Collision2D other)
+    protected virtual void OnCollisionStay2D(Collision2D other)
     {
         if (!goingThrough && other.gameObject.tag == "Player" && thePlayer.GetComponent<PlayerController>().damagable == false)
         {

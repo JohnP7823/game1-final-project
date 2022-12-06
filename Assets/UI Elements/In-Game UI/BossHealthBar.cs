@@ -32,7 +32,7 @@ public class BossHealthBar : MonoBehaviour
 
     public void SetMaxHealth(float max)
     {
-        bMaxHP += (int)(bMaxHP * max / 100);
+        bMaxHP = max;
         UpdateHealthBar(bMaxHP);
     }
 }

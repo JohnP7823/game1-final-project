@@ -7,44 +7,49 @@ using TMPro;
 
 public static class GameState
 {
-    public static int PlayerHealth { get; set; }
-    public static int PlayerMana { get; set; }
-    public static int Lives { get; set; }
-    public static int Level { get; set; }
-    public static int Checkpoint { get; set; }
-    public static int Score { get; set;  }
+    public static int PlayerHealth { get; set; } = 20;
+    public static int PlayerMana { get; set; } = 3;
+    public static int Lives { get; set; } = 2;
+    public static int Level { get; set; } = 1;
+    public static int Checkpoint { get; set; } = 1;
+    public static int Score { get; set; } = 0;
+    public static bool Restart { get; set; } = false;
+    public static bool ExtraLife { get; set; } = true;
     public static GameObject thePlayer;
-    public static TextMeshProUGUI scoreText, manaText;
-
-    public static void Start()
-    {
-        Lives = 2;
-        Level = 1;
-        Checkpoint = 1;
-        Score = 0;
-        thePlayer = GameObject.Find("Player");
-    }
+    public static TextMeshProUGUI scoreText, manaText, livesText;
 
     public static void RestartAtCheckpoint()
     {
         // Load the scene according to Checkpoint
-        // Transfer to the beginning of the level (To code)
-
+        string SceneName = "Level " + Level.ToString() + "-" + Checkpoint.ToString();
+        SceneManager.LoadSceneAsync(SceneName);
         // Do player reset function
-        thePlayer = GameObject.Find("Player");
-        thePlayer.GetComponent<PlayerController>().ResetState();
+        Lives--;
+        Restart = true;
     }
 
     public static void RestartLevel()
     {
         // Load the scene according to Level
-        // Transfer to the beginning of the level (To code)
-
+        Checkpoint = 1;
+        string SceneName = "Level " + Level.ToString() + "-" + Checkpoint.ToString();
+        //Debug.Log(SceneName);
+        SceneManager.LoadSceneAsync(SceneName);
         Score = 0; // Reset score
-        AddScore(0);
+        Lives = 2; // Reset lives
         // Player reset
+        Restart = true;
+    }
+
+    public static void ResetState()
+    {
         thePlayer = GameObject.Find("Player");
         thePlayer.GetComponent<PlayerController>().ResetState();
+        PlayerHealth = 20;
+        PlayerMana = 3;
+        AddScore(0);
+        UpdateLives();
+        Restart = false;
     }
 
     public static void NextScene()
@@ -52,29 +57,40 @@ public static class GameState
         thePlayer = GameObject.Find("Player");
         PlayerHealth = thePlayer.GetComponent<PlayerController>().hp;
         PlayerMana = thePlayer.GetComponent<PlayerController>().mana;
-        // Do the scene transfer with the cut to black and back.
+        Debug.Log("Player health is: " + PlayerHealth + ", Player mana is: " + PlayerMana);
+        Checkpoint++;
+        // Do the scene transfer
+        string SceneName = "Level " + Level.ToString() + "-" + Checkpoint.ToString();
+        Debug.Log(SceneName);
+        SceneManager.LoadSceneAsync(SceneName);
+    }
+
+    public static void LoadSceneInfo()
+    {
         thePlayer = GameObject.Find("Player");
-        thePlayer.GetComponent<PlayerController>().SetStats(PlayerHealth,  PlayerMana);
+        //Debug.Log(thePlayer.tag);
+        thePlayer.GetComponent<PlayerController>().SetStats(PlayerHealth, PlayerMana);
         UpdateMana(PlayerMana);
+        AddScore(0);
+        UpdateLives();
     }
 
     public static void NextLevel()
     {
-        Debug.Log(Level);
+        Restart = true;
         switch (Level)
         {
             case 1:
-                SceneManager.LoadScene("Level 1-1");
+                SceneManager.LoadSceneAsync("Level 1-1");
                 break;
             case 2:
-                SceneManager.LoadScene("Level 2-1");
+                SceneManager.LoadSceneAsync("Level 2-1");
                 break;
             case 3:
-                SceneManager.LoadScene("Level 3-1");
+                SceneManager.LoadSceneAsync("Level 3-1");
                 break;
         }
-        //thePlayer = GameObject.Find("Player");
-        //thePlayer.GetComponent<PlayerController>().ResetState();
+        Checkpoint = 1;
     }
 
     public static void AddScore(int aScore)
@@ -83,14 +99,28 @@ public static class GameState
         GameObject scoreUI = GameObject.Find("Score Value Text");
         scoreText = scoreUI.GetComponent<TextMeshProUGUI>();
         scoreText.text = Score.ToString();
+        if(ExtraLife && Score > 50000)
+        {
+            Lives++;
+            UpdateLives();
+            ExtraLife = false;
+        }
     }
    
     public static void UpdateMana(int aMana)
     {
-        thePlayer = GameObject.Find("Player"); // temp
-        PlayerMana = thePlayer.GetComponent<PlayerController>().mana;
         GameObject manaUI = GameObject.Find("Mana Value Text");
         manaText = manaUI.GetComponent<TextMeshProUGUI>();
-        manaText.text = PlayerMana.ToString();
+        manaText.text = aMana.ToString();
+    }
+
+    public static void UpdateLives()
+    {
+        //Lives = Lives + aLives;
+        GameObject livesUI = GameObject.Find("Lives Value Text");
+        livesText = livesUI.GetComponent<TextMeshProUGUI>();
+        livesText.text = Lives.ToString();
+        //Debug.Log("Lives should be: " + Lives);
+        //Debug.Log("Text: " + livesText.text);
     }
 }
